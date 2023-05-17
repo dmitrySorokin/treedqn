@@ -1,0 +1,20 @@
+instances:
+  co_class: 'combinatorial_auction'
+  co_class_kwargs:
+    n_items: 100
+    n_bids: 500
+
+
+experiment:
+  seed: 12345
+  device: 'cuda:0'
+  num_updates: 100000
+  buffer_max_size: 100000
+  buffer_start_size: 1000
+  eval_freq: 5000
+
+
+agent:
+  name: 'dqn'
+  suffix: ''
+  checkpoint: 'models/dqn/combinatorial_auction.pkl'

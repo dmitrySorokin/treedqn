@@ -1,0 +1,19 @@
+instances:
+  co_class: 'maximum_independent_set'
+  co_class_kwargs:
+    'n_nodes': 500
+
+experiment:
+  seed: 12345
+  device: 'cpu'
+  path_to_load_imitation_data: 'outputs/mis_500/dataset/'
+  max_steps: null
+  num_samples: 100000
+  num_epochs: 250
+  epoch_log_frequency: 1
+  checkpoint_log_frequency: 1
+
+agent:
+  name: 'il'
+  suffix: ''
+  checkpoint: 'models/il/maximum_independent_set.pkl'

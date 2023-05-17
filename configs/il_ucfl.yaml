@@ -1,0 +1,23 @@
+instances:
+  co_class: 'ucfl'
+  co_class_kwargs:
+    n_customers: 35
+    n_facilities: 35
+    ratio: 5
+
+
+experiment:
+  seed: 12345
+  device: 'cuda:0'
+  path_to_load_imitation_data: 'outputs/ucfl_35_35_5/dataset/'
+  num_samples: 100000
+  max_steps: null
+  num_epochs: 300
+  epoch_log_frequency: 1
+  checkpoint_log_frequency: 1
+
+
+agent:
+  name: 'il'
+  suffix: ''
+  checkpoint: 'models/il/ucfl.pkl'

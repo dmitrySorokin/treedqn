@@ -1,0 +1,20 @@
+instances:
+  co_class: 'set_covering'
+  co_class_kwargs:
+    n_rows: 400
+    n_cols: 750
+
+
+experiment:
+  seed: 12345
+  device: 'cuda:0'
+  num_updates: 100000
+  buffer_max_size: 100000
+  buffer_start_size: 1000
+  eval_freq: 5000
+
+
+agent:
+  name: 'dqn'
+  suffix: ''
+  checkpoint: 'models/dqn/set_covering.pkl'
