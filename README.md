@@ -12,10 +12,10 @@ This repository is the official implementation of [TreeDQN: Learning to minimize
 
 ```bash
 # pull docker image
-docker pull idono/rlbnb:v3
+docker pull idono/rlbnb:release
 
 # run docker container
-docker run -dit --gpus all --shm-size=10g --name rlbnb rlbnb:v3 /bin/bash
+docker run -dit --gpus all --shm-size=10g --name rlbnb rlbnb:release /bin/bash
 
 # enter docker container
 docker exec -it rlbnb /bin/bash
