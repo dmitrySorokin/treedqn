@@ -24,6 +24,7 @@ class EvalProcess(mp.Process):
         agent = DQNAgent(device=self.cfg.experiment.device, epsilon=0)
         co_name = gen_co_name(self.cfg.instances.co_class, self.cfg.instances.co_class_kwargs)
         folder = f'../../../validate_instances/{co_name}'
+        tasks = [(os.path.join(folder, f'instance_{j + 1}.lp'), seed) for j in range(20) for seed in range(5)]
         stop = False
         while not stop:
             if self.in_queue.empty():
@@ -33,11 +34,9 @@ class EvalProcess(mp.Process):
 
             agent.load(checkpoint)
             n_nodes = []
-            for task in os.listdir(folder):
-                if not task.endswith('.lp'):
-                    continue
-                env.seed(0)
-                obs, act_set, _, done, _ = env.reset_basic(os.path.join(folder, task))
+            for file, seed in tasks:
+                env.seed(seed)
+                obs, act_set, _, done, _ = env.reset_basic(file)
                 while not done:
                     act = agent.act(obs, act_set, deterministic=True)
                     obs, act_set, _, done, _ = env.step(act)
