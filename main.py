@@ -23,13 +23,14 @@ class EvalProcess(mp.Process):
         env = EcoleBranching(None)
         agent = DQNAgent(device=self.cfg.experiment.device, epsilon=0)
         co_name = gen_co_name(self.cfg.instances.co_class, self.cfg.instances.co_class_kwargs)
-        update_id, max_updates = -1, self.cfg.experiment.num_updates
         folder = f'../../../validate_instances/{co_name}'
-        while True:
+        stop = False
+        while not stop:
             if self.in_queue.empty():
                 time.sleep(60)
                 continue
-            (checkpoint, update_id) = self.in_queue.get()
+            (checkpoint, episode, stop) = self.in_queue.get()
+
             agent.load(checkpoint)
             n_nodes = []
             for task in os.listdir(folder):
@@ -42,10 +43,7 @@ class EvalProcess(mp.Process):
                     obs, act_set, _, done, _ = env.step(act)
                 n_nodes.append(env.model.as_pyscipopt().getNNodes())
             geomean = np.exp(np.mean(np.log(n_nodes)))
-            self.out_queue.put((geomean, update_id))
-
-            if update_id == max_updates:
-                break
+            self.out_queue.put((geomean, episode))
 
 
 def rollout(env, agent, replay_buffer, max_tree_size=1000):
@@ -107,46 +105,53 @@ def main(cfg: DictConfig):
         pbar.update(num_obs)
     pbar.close()
 
-    pbar = tqdm(total=cfg.experiment.num_updates, desc='train')
+    pbar = tqdm(total=cfg.experiment.num_episodes, desc='train')
     update_id = 0
-    episode = 0
+    episode_id = 0
     epsilon_min = 0.01
 
     in_queue, out_queue = mp.Queue(), mp.Queue()
     evaler = EvalProcess(cfg, in_queue, out_queue)
     evaler.start()
 
-    while update_id < pbar.total:
+    while episode_id < pbar.total:
         num_obs, info = rollout(env, agent, replay_buffer)
-        writer.add_scalar('episode/num_nodes', info['num_nodes'], episode)
-        writer.add_scalar('episode/lp_iterations', info['lp_iterations'], episode)
-        writer.add_scalar('episode/solving_time', info['solving_time'], episode)
-        print(episode, info['num_nodes'])
-        episode += 1
+        writer.add_scalar('num_nodes', info['num_nodes'], episode_id)
+        writer.add_scalar('lp_iterations', info['lp_iterations'], episode_id)
+        writer.add_scalar('solving_time', info['solving_time'], episode_id)
+        writer.add_scalar('epsilon', agent.epsilon, episode_id)
+
+        print(episode_id, info['num_nodes'])
+        
+        episode_id += 1
+        episode_loss = []
         for i in range(num_obs):
-            loss = agent.update(update_id, replay_buffer.sample())
-            writer.add_scalar('update/loss', loss, update_id)
-            writer.add_scalar('update/epsilon', agent.epsilon, update_id)
+            episode_loss.append(agent.update(update_id, replay_buffer.sample()))
             update_id += 1
-            
-            epsilon = 1. - (1. - epsilon_min) / pbar.total * update_id
-            agent.epsilon = max(epsilon_min, epsilon)
+        
+        writer.add_scalar('loss', np.mean(episode_loss), episode_id)
 
-            if update_id % cfg.experiment.eval_freq == 0:
-                chkpt = os.getcwd() + f'/checkpoint_{update_id}.pkl'
-                agent.save(chkpt)
-                in_queue.put((chkpt, update_id))
+        epsilon = 1. - (1. - epsilon_min) / pbar.total * episode_id
+        agent.epsilon = max(epsilon_min, epsilon)
 
-        chkpt = os.getcwd() + f'/checkpoint_{update_id}.pkl'
+        chkpt = os.getcwd() + f'/checkpoint_{episode_id}.pkl'
         agent.save(chkpt)
 
+        if episode_id % cfg.experiment.eval_freq == 0 or episode_id == cfg.experiment.num_episodes:
+            chkpt = os.getcwd() + f'/checkpoint_{episode_id}.pkl'
+            agent.save(chkpt)
+            in_queue.put((chkpt, episode_id, episode_id == cfg.experiment.num_episodes))
+
         while not out_queue.empty():
-            writer.add_scalar('update/eval', *out_queue.get_nowait())
+            writer.add_scalar('eval', *out_queue.get_nowait())
 
 
         pbar.update(num_obs)
     evaler.join()
     pbar.close()
+
+    while not out_queue.empty():
+        writer.add_scalar('eval', *out_queue.get_nowait())
 
 
 if __name__ == '__main__':
