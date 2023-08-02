@@ -146,7 +146,7 @@ def main(cfg: DictConfig):
             writer.add_scalar('eval', *out_queue.get_nowait())
 
 
-        pbar.update(episode_id)
+        pbar.update(1)
     evaler.join()
     pbar.close()
 
