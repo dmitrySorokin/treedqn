@@ -108,6 +108,7 @@ def main(cfg: DictConfig):
     update_id = 0
     episode_id = 0
     epsilon_min = 0.01
+    decay_steps = 100000
 
     in_queue, out_queue = mp.Queue(), mp.Queue()
     evaler = EvalProcess(cfg, in_queue, out_queue)
@@ -138,7 +139,7 @@ def main(cfg: DictConfig):
             in_queue.put((chkpt, episode_id, episode_id == cfg.experiment.num_episodes))
 
         episode_id += 1
-        epsilon = 1. - (1. - epsilon_min) / pbar.total * episode_id
+        epsilon = 1. - (1. - epsilon_min) / decay_steps * update_id
         agent.epsilon = max(epsilon_min, epsilon)
 
         while not out_queue.empty():
