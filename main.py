@@ -122,16 +122,12 @@ def main(cfg: DictConfig):
 
         print(episode_id, info['num_nodes'])
         
-        episode_id += 1
         episode_loss = []
         for i in range(num_obs):
             episode_loss.append(agent.update(update_id, replay_buffer.sample()))
             update_id += 1
         
         writer.add_scalar('loss', np.mean(episode_loss), episode_id)
-
-        epsilon = 1. - (1. - epsilon_min) / pbar.total * episode_id
-        agent.epsilon = max(epsilon_min, epsilon)
 
         chkpt = os.getcwd() + f'/checkpoint_{episode_id}.pkl'
         agent.save(chkpt)
@@ -141,11 +137,15 @@ def main(cfg: DictConfig):
             agent.save(chkpt)
             in_queue.put((chkpt, episode_id, episode_id == cfg.experiment.num_episodes))
 
+        episode_id += 1
+        epsilon = 1. - (1. - epsilon_min) / pbar.total * episode_id
+        agent.epsilon = max(epsilon_min, epsilon)
+
         while not out_queue.empty():
             writer.add_scalar('eval', *out_queue.get_nowait())
 
 
-        pbar.update(num_obs)
+        pbar.update(episode_id)
     evaler.join()
     pbar.close()
 
