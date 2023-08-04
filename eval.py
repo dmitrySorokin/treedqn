@@ -1,4 +1,4 @@
-from agent import DQNAgent, ImitationAgent
+from agent import DQNAgent, ImitationAgent, ReinforceAgent
 from env import EcoleBranching
 from tasks import gen_co_name
 
@@ -89,6 +89,27 @@ def get_ilbrancher(cfg, ckpt: str, device: str = "cpu") -> Callable:
         return _do_branch
 
     return _ilbrancher
+
+
+def get_reinforcebrancher(cfg, ckpt: str, device: str = "cpu") -> Callable:
+    """Load a IL agent from a checkpoint and return a brancher"""
+    assert os.path.isfile(ckpt)
+
+    agent = ReinforceAgent(device=device)
+    agent.load(ckpt)
+    agent.eval()
+
+    def _brancher(env: ecole.environment.Branching) -> Callable:
+        """Get a il-based branching policy for env"""
+
+        def _do_branch(obs: ..., act_set: ..., deterministic: bool = True) -> int:
+            """Decide on the branching variable with a graph DQN"""
+            act = agent.act(obs, act_set)
+            return act
+
+        return _do_branch
+
+    return _brancher
 
 
 class Job(NamedTuple):
@@ -197,6 +218,13 @@ def evaluate(cfg: DictConfig):
 
         print(f"Loading `{ckpt}` to {device}")
         brancher = get_ilbrancher(cfg, ckpt, device)
+
+    elif cfg.agent.name == "reinforce":
+        device = cfg.get("device", "cpu")
+        ckpt = os.path.abspath(cfg.agent.checkpoint)
+
+        print(f"Loading `{ckpt}` to {device}")
+        brancher = get_reinforcebrancher(cfg, ckpt, device)
 
     else:
         raise NotImplementedError(f"Unknown agent name {cfg.agent.name}")
