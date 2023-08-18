@@ -12,7 +12,6 @@ class FMCTSAgent:
         self.net = GNNPolicy(device=device).to(device)
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=1e-4)
 
-        self.target_net_freq = 1000
         self.grad_norm = 50
         self.gamma = 1.0
         self.epsilon = epsilon
@@ -54,9 +53,6 @@ class FMCTSAgent:
         grad_norm = nn.utils.clip_grad_norm_(self.net.parameters(), self.grad_norm)
         self.optimizer.step()
 
-        if step % self.target_net_freq == 0:
-            self.target_net.load_state_dict(self.net.state_dict())
-
         return loss.detach().cpu().item()
 
     
@@ -70,7 +66,6 @@ class FMCTSAgent:
 
     def train(self):
         self.net.train()
-        self.target_net.train()
 
     def eval(self):
         self.net.eval()
