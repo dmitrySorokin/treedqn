@@ -33,7 +33,12 @@ class Reward:
 
         # instance was pre-solved
         if self.tree is None:
-            return []
+            return [], []
+
+        postorder(
+            self.tree.tree,
+            list(self.tree.tree.graph['root_node'].keys())[0]
+        )
 
         node2position = {node: i for i, node in enumerate(self.tree.tree.graph['visited_node_ids'])}
 
