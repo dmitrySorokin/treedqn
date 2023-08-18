@@ -40,7 +40,7 @@ class Reward:
         returns = []
         childrens = []
         for node in self.tree.tree.graph['visited_node_ids']:
-            returns.append(-self.normalised_lp_gain.tree.tree.nodes[node]['subtree_size'])
+            returns.append(-self.tree.tree.nodes[node]['subtree_size'])
     
             # ignore not visited children
             childrens.append([
