@@ -1,6 +1,18 @@
 from .search_tree import SearchTree
 
 
+def postorder(graph, root):
+    tot = 0
+    children = []
+    for child in graph.successors(root):
+        tot += postorder(graph, child)
+        children.append(child)
+
+    graph.nodes[root]['subtree_size'] = tot + 1
+    graph.nodes[root]['children'] = children
+    return graph.nodes[root]['subtree_size']
+
+
 class Reward:
     def __init__(self, debug=False):
         self.tree = None
@@ -25,8 +37,11 @@ class Reward:
 
         node2position = {node: i for i, node in enumerate(self.tree.tree.graph['visited_node_ids'])}
 
+        returns = []
         childrens = []
         for node in self.tree.tree.graph['visited_node_ids']:
+            returns.append(-self.normalised_lp_gain.tree.tree.nodes[node]['subtree_size'])
+    
             # ignore not visited children
             childrens.append([
                 node2position[child] for child in self.tree.tree.successors(node) if child in node2position
@@ -46,4 +61,4 @@ class Reward:
             self.tree.render()
 
 
-        return childrens
+        return returns, childrens

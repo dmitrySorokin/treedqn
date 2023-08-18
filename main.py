@@ -3,7 +3,7 @@ import numpy as np
 from omegaconf import DictConfig
 from env import EcoleBranching
 from tasks import make_instances
-from agent import DQNAgent, ReplayBuffer
+from agent import FMCTSAgent, ReplayBuffer
 from tqdm import tqdm
 import os
 from tensorboardX import SummaryWriter
@@ -21,7 +21,7 @@ class EvalProcess(mp.Process):
 
     def run(self):
         env = EcoleBranching(None)
-        agent = DQNAgent(device=self.cfg.experiment.device, epsilon=0)
+        agent = FMCTSAgent(device=self.cfg.experiment.device, epsilon=0)
         co_name = gen_co_name(self.cfg.instances.co_class, self.cfg.instances.co_class_kwargs)
         folder = f'../../../validate_instances/{co_name}'
         tasks = [(os.path.join(folder, f'instance_{j + 1}.lp'), seed) for j in range(20) for seed in range(5)]
@@ -46,29 +46,29 @@ class EvalProcess(mp.Process):
 
 
 def rollout(env, agent, replay_buffer, max_tree_size=1000):
-    obs, act_set, children_ids, done, info = env.reset()
+    obs, act_set, (returns, children_ids), done, info = env.reset()
     
-    traj_obs, traj_rew, traj_act, traj_actset, traj_done = [], [], [], [], []
+    traj_obs, traj_ret, traj_act, traj_actset, traj_done = [], [], [], [], []
     while not done:
         action = agent.act(obs, act_set, deterministic=False)
         traj_obs.append(obs)
         traj_act.append(action)
         traj_actset.append(act_set)
-        obs, act_set, children_ids, done, info = env.step(action)
+        obs, act_set, (returns, children_ids), done, info = env.step(action)
         traj_done.append(done)
 
     traj_nextobs, traj_nextactset = [], []
-    for children in children_ids:
+    for ret, children in zip(returns, children_ids):
         traj_nextobs.append([traj_obs[c] for c in children])
         traj_nextactset.append([traj_actset[c] for c in children])
-        traj_rew.append(-1)
+        traj_ret.append(ret)
 
     assert len(traj_obs) == len(traj_nextobs)
     tree_size = len(traj_obs)
     # ids = np.random.choice(range(tree_size), min(tree_size, max_tree_size), replace=False)
     ids = list(range(min(tree_size, max_tree_size)))
     traj_obs = np.asarray(traj_obs)[ids]
-    traj_rew = np.asarray(traj_rew)[ids]
+    traj_ret = np.asarray(traj_ret)[ids]
     traj_act = np.asarray(traj_act)[ids]
     
     traj_nextobs = np.array(traj_nextobs, dtype=list)[ids]
@@ -76,8 +76,8 @@ def rollout(env, agent, replay_buffer, max_tree_size=1000):
     traj_done = np.asarray(traj_done)[ids]
 
 
-    for transition in zip(traj_obs, traj_rew, traj_act, traj_nextobs, traj_nextactset, traj_done):
-        replay_buffer.add_transition(*transition)
+    for transition in zip(traj_obs, traj_ret, traj_act, traj_nextobs, traj_nextactset, traj_done):
+        replay_buffer.add_transition(*transition, tree_size)
 
     return len(ids), info
 
@@ -90,7 +90,7 @@ def main(cfg: DictConfig):
     env = EcoleBranching(make_instances(cfg, cfg.experiment.seed), dfs=True)
     env.seed(cfg.experiment.seed)
 
-    agent = DQNAgent(device=cfg.experiment.device, epsilon=1)
+    agent = FMCTSAgent(device=cfg.experiment.device, epsilon=1)
     agent.train()
 
     replay_buffer = ReplayBuffer(
