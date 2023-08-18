@@ -29,7 +29,7 @@ class Reward:
                 self.tree.update_tree(model)
                 if self.debug_mode:
                     self.tree.render()
-            return None
+            return None, None
 
         # instance was pre-solved
         if self.tree is None:
