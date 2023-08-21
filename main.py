@@ -114,7 +114,7 @@ def main(cfg: DictConfig):
     evaler = EvalProcess(cfg, in_queue, out_queue)
     evaler.start()
 
-    while episode_id < pbar.total:
+    while episode_id <= pbar.total:
         num_obs, info = rollout(env, agent, replay_buffer)
         writer.add_scalar('num_nodes', info['num_nodes'], episode_id)
         writer.add_scalar('lp_iterations', info['lp_iterations'], episode_id)
