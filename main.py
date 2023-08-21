@@ -108,7 +108,7 @@ def main(cfg: DictConfig):
     update_id = 0
     episode_id = 0
     epsilon_min = 0.01
-    decay_steps = 150000
+    decay_steps = 100000
 
     in_queue, out_queue = mp.Queue(), mp.Queue()
     evaler = EvalProcess(cfg, in_queue, out_queue)
