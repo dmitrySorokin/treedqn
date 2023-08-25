@@ -108,13 +108,13 @@ def main(cfg: DictConfig):
     update_id = 0
     episode_id = 0
     epsilon_min = 0.01
-    decay_steps = 150000
+    decay_steps = 100000
 
     in_queue, out_queue = mp.Queue(), mp.Queue()
     evaler = EvalProcess(cfg, in_queue, out_queue)
     evaler.start()
 
-    while episode_id < pbar.total:
+    while episode_id <= pbar.total:
         num_obs, info = rollout(env, agent, replay_buffer)
         writer.add_scalar('num_nodes', info['num_nodes'], episode_id)
         writer.add_scalar('lp_iterations', info['lp_iterations'], episode_id)

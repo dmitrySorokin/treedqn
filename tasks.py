@@ -100,7 +100,7 @@ def generate_unsplittable_capacited_facility_location(seed, n_customers, n_facil
 def generate_knapsack(
         seed,
         number_of_items, number_of_knapsacks,
-        min_range=10, max_range=20, scheme='weakly correlated'):
+        min_range=10, max_range=20, scheme='subset-sum'):
     """
     Generate a Multiple Knapsack problem following a scheme among those found in section 2.1. of
         Fukunaga, Alex S. (2011). A branch-and-bound algorithm for hard multiple knapsack problems.
