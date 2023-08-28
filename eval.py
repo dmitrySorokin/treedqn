@@ -1,4 +1,4 @@
-from agent import DQNAgent, ImitationAgent, ReinforceAgent
+from agent import DQNAgent, ImitationAgent, ReinforceAgent, FMCTSAgent
 from env import EcoleBranching
 from tasks import gen_co_name
 
@@ -68,6 +68,27 @@ def get_dqnbrancher(ckpt: str, device: str = "cpu") -> Callable:
         return _do_branch
 
     return _dqnbrancher
+
+
+def get_fmctsbrancher(ckpt: str, device: str = "cpu") -> Callable:
+    """Load a FMCTS agent from a checkpoint and return a brancher"""
+    assert os.path.isfile(ckpt)
+
+    agent = FMCTSAgent(device=device, epsilon=0)
+    agent.load(ckpt)
+
+    def _brancher(env: ecole.environment.Branching) -> Callable:
+        """Get a FMCTS-based branching policy for env"""
+
+        def _do_branch(obs: ..., act_set: ..., deterministic: bool = True) -> int:
+            """Decide on the branching variable with a graph DQN"""
+            agent.eval()
+            act = agent.act(obs, act_set, deterministic=deterministic)
+            return act
+
+        return _do_branch
+
+    return _brancher
 
 
 def get_ilbrancher(cfg, ckpt: str, device: str = "cpu") -> Callable:
@@ -208,6 +229,14 @@ def evaluate(cfg: DictConfig):
 
         print(f"Loading `{ckpt}` to {device}")
         brancher = get_dqnbrancher(ckpt, device)
+
+    elif cfg.agent.name == "fmcts":
+        device = cfg.get("device", "cpu")
+        ckpt = os.path.abspath(cfg.agent.checkpoint)
+
+        print(f"Loading `{ckpt}` to {device}")
+        brancher = get_fmctsbrancher(ckpt, device)
+
 
     elif cfg.agent.name == "random":
         brancher = get_randombrancher(seed=None)  # XXX seed is deliberately not fixed
