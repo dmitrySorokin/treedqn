@@ -20,13 +20,13 @@ class DQNAgent:
 
     def _predict(self, qnet, obs):
         value, adv = qnet(obs)
-        return -torch.exp(value.mean() + (adv - adv.mean()))
+        return value.mean() + (adv - adv.mean())
 
     def _act(self, qnet, obs, action_set):
         with torch.no_grad():
             preds = self._predict(qnet, obs)[action_set.astype('int32')]
 
-        action_idx = torch.argmax(preds)
+        action_idx = torch.argmin(preds)
         action = action_set[action_idx.item()]
         return action
 
@@ -37,12 +37,11 @@ class DQNAgent:
         return self._act(self.net, obs, action_set)
 
     def loss(self, obs, nextobs, next_actset, reward, action, done):
-        value, adv = self.net(obs)
-        logq_pred = (value.mean() + (adv - adv.mean()))[action]
+        logq_pred = self._predict(self.net, obs)
 
         next_actions = [self._act(self.net, nobs, nactset) for nobs, nactset in zip(nextobs, next_actset)]
         q_next = sum([
-            self._predict(self.target_net, nobs)[naction].detach() for nobs, naction in zip(nextobs, next_actions)
+            -torch.exp(self._predict(self.target_net, nobs)[naction].detach()) for nobs, naction in zip(nextobs, next_actions)
         ])
 
         q_fact = torch.tensor(reward + q_next * self.gamma * (1 - done), device=logq_pred.device)
