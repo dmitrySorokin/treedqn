@@ -37,7 +37,7 @@ class DQNAgent:
         return self._act(self.net, obs, action_set)
 
     def loss(self, obs, nextobs, next_actset, reward, action, done):
-        logq_pred = self._predict(self.net, obs)
+        logq_pred = self._predict(self.net, obs)[action]
 
         next_actions = [self._act(self.net, nobs, nactset) for nobs, nactset in zip(nextobs, next_actset)]
         q_next = sum([
