@@ -66,8 +66,8 @@ if __name__ == '__main__':
     colors = {
         'strong': 'tab:blue',
         'dqn': 'tab:orange',
-        'gcnn:tmdp+DFS': 'tab:green',
-        'gcnn:tmdp+ObjLim': 'black',
+        'reinforce': 'tab:green',
+        'fmcts': 'black',
         'il': 'tab:red'
     }
 
@@ -75,7 +75,9 @@ if __name__ == '__main__':
         'dqn_dfs.csv',
         'dqn_mse.csv',
         'dqn_dfslong.csv',
-        'scavuzzo_objlim.csv'
+        'scavuzzo_objlim.csv',
+        'scavuzzo.csv',
+        'dqn_net.csv'
     }
 
     for fname in os.listdir(path):
