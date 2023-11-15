@@ -133,6 +133,19 @@ def get_reinforcebrancher(cfg, ckpt: str, device: str = "cpu") -> Callable:
     return _brancher
 
 
+def get_pseudocostbrancher() -> Callable:
+    def _brancher(env: ecole.environment.Configuring) -> Callable:
+        """Get a il-based branching policy for env"""
+
+        def _do_branch(obs: ..., act_set: ..., deterministic: bool = True) -> int:
+            """Decide on the branching variable with a graph DQN"""
+            return {}
+
+        return _do_branch
+
+    return _brancher
+
+
 class Job(NamedTuple):
     alias: str
     instance: str
@@ -147,7 +160,17 @@ def evaluate_one(
     stop: Callable[[], bool] = (lambda: False),
 ) -> dict:
 
-    env = EcoleBranching(None, params={"limits/nodes": 200000, "limits/time": 60 * 60 * 60})
+    if j.name == 'pseudocost':
+        env = ecole.environment.Configuring(
+                scip_params={
+                    "limits/nodes": 200000, 
+                    "limits/time": 60 * 60 * 60,
+                    "branching/relpscost/priority": 9999999
+                })
+        env.reset_basic = env.reset
+    else:
+        env = EcoleBranching(None, params={"limits/nodes": 200000, "limits/time": 60 * 60 * 60})
+    
     env.seed(j.seed)
 
     pick = branchers[j.name](env)
@@ -254,6 +277,9 @@ def evaluate(cfg: DictConfig):
 
         print(f"Loading `{ckpt}` to {device}")
         brancher = get_reinforcebrancher(cfg, ckpt, device)
+
+    elif cfg.agent.name == "pseudocost":
+        brancher = get_pseudocostbrancher()
 
     else:
         raise NotImplementedError(f"Unknown agent name {cfg.agent.name}")
