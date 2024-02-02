@@ -1,6 +1,7 @@
-# TreeDQN: Learning to minimize Branch-and-Bound tree
+# TreeDQN: Learning variable selection rules for combinatorial optimization problems
 
-This repository is the official implementation of [TreeDQN: Learning to minimize Branch-and-Bound tree](https://arxiv.org/abs/2306.05905). 
+This repository is the official implementation of TreeDQN: Learning variable selection rules for combinatorial optimization
+problems. 
 
 
 <p float="center">
