@@ -1,6 +1,6 @@
 import numpy as np
 import ecole
-from SumTree import SumTree
+from agent.SumTree import SumTree
 
 
 class ReplayBuffer:
@@ -96,7 +96,6 @@ class PrioritizedReplay:  # stored as ( s, a, r, s_ ) in SumTree
             s = np.random.uniform(a, b)
             (idx, p, data) = self.tree.get(s)
             priorities.append(p)
-            batch.append(data)
             idxs.append(idx)
             for key, value in zip(batch.keys(), data):
                 batch[key].append(value)
@@ -104,6 +103,8 @@ class PrioritizedReplay:  # stored as ( s, a, r, s_ ) in SumTree
         sampling_probabilities = priorities / self.tree.total()
         is_weight = np.power(self.tree.n_entries * sampling_probabilities, -self.beta)
         is_weight /= is_weight.max()
+        
+        batch["obs"] = np.asarray(batch["obs"], dtype=ecole.core.observation.NodeBipartiteObs)
 
         return batch, idxs, is_weight
 

@@ -76,8 +76,8 @@ def rollout(env, agent, replay_buffer, max_tree_size=1000):
     traj_done = np.asarray(traj_done)[ids]
 
 
-    for transition in zip(traj_obs, traj_rew, traj_act, traj_nextobs, traj_nextactset, traj_done):
-        td_error = agent.loss(*transition).detach().cpu().numpy().pow(0.5)
+    for transition in zip(traj_obs, traj_nextobs, traj_nextactset, traj_rew, traj_act, traj_done):
+        td_error = agent.loss(*transition).detach().cpu().numpy() **  0.5
         replay_buffer.add_transition(td_error ,transition)
 
     return len(ids), info
@@ -131,7 +131,7 @@ def main(cfg: DictConfig):
             for idx, trans in zip(idxs, zip(
                 batch['obs'], batch['next_obs'], batch['next_actset'],
                 batch['rew'], batch['act'], batch['done'])):
-                td_error = agent.loss(*trans).detach().cpu().numpy().pow(0.5)
+                td_error = agent.loss(*trans).detach().cpu().numpy() **  0.5
                 replay_buffer.update(idx, td_error)
             update_id += 1
         
