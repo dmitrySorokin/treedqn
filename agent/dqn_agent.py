@@ -47,15 +47,15 @@ class DQNAgent:
         q_fact = torch.tensor(reward + q_next * self.gamma * (1 - done), device=logq_pred.device)
         return (logq_pred - torch.log(torch.abs(q_fact))) ** 2
 
-    def update(self, step, batch):
+    def update(self, step, batch, is_weight):
         self.optimizer.zero_grad()
 
         loss = 0
         
-        for trans in zip(
+        for trans, weight in zip(zip(
             batch['obs'], batch['next_obs'], batch['next_actset'],
-            batch['rew'], batch['act'], batch['done']):
-            loss += self.loss(*trans)
+            batch['rew'], batch['act'], batch['done']), is_weight):
+            loss += self.loss(*trans) * weight
         
         loss /= len(batch['obs'])
         loss.backward()

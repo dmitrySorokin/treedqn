@@ -3,7 +3,7 @@ import numpy as np
 from omegaconf import DictConfig
 from env import EcoleBranching
 from tasks import make_instances
-from agent import DQNAgent, ReplayBuffer
+from agent import DQNAgent, PrioritizedReplay
 from tqdm import tqdm
 import os
 from tensorboardX import SummaryWriter
@@ -77,7 +77,8 @@ def rollout(env, agent, replay_buffer, max_tree_size=1000):
 
 
     for transition in zip(traj_obs, traj_rew, traj_act, traj_nextobs, traj_nextactset, traj_done):
-        replay_buffer.add_transition(*transition)
+        td_error = agent.loss(*transition).detach().cpu().numpy().pow(0.5)
+        replay_buffer.add_transition(td_error ,transition)
 
     return len(ids), info
 
@@ -93,7 +94,7 @@ def main(cfg: DictConfig):
     agent = DQNAgent(device=cfg.experiment.device, epsilon=1)
     agent.train()
 
-    replay_buffer = ReplayBuffer(
+    replay_buffer = PrioritizedReplay(
         max_size=cfg.experiment.buffer_max_size,
         start_size=cfg.experiment.buffer_start_size
     )
@@ -125,7 +126,13 @@ def main(cfg: DictConfig):
         
         episode_loss = []
         for i in range(num_obs):
-            episode_loss.append(agent.update(update_id, replay_buffer.sample()))
+            batch,  idxs, is_weight = replay_buffer.sample()
+            episode_loss.append(agent.update(update_id, batch, is_weight))
+            for idx, trans in zip(idxs, zip(
+                batch['obs'], batch['next_obs'], batch['next_actset'],
+                batch['rew'], batch['act'], batch['done'])):
+                td_error = agent.loss(*trans).detach().cpu().numpy().pow(0.5)
+                replay_buffer.update(idx, td_error)
             update_id += 1
         
         writer.add_scalar('loss', np.mean(episode_loss), episode_id)
