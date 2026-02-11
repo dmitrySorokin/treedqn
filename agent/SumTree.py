@@ -1,4 +1,5 @@
-import numpy
+import ecole 
+import numpy as np
 
 
 # SumTree
@@ -8,8 +9,16 @@ class SumTree:
 
     def __init__(self, capacity):
         self.capacity = capacity
-        self.tree = numpy.zeros(2 * capacity - 1)
-        self.data = numpy.zeros(capacity, dtype=object)
+        self.tree = np.zeros(2 * capacity - 1)
+
+        self.obs = np.zeros(capacity, dtype=ecole.core.observation.NodeBipartiteObs)
+        self.rew = np.zeros(capacity, dtype=float)
+        self.act = np.zeros(capacity, int)
+
+        self.nextobs = np.zeros(capacity, dtype=list)
+        self.nextactset = np.zeros(capacity, dtype=list)
+        self.done = np.zeros(capacity, dtype=float)
+
         self.n_entries = 0
 
     # update to the root node
@@ -38,10 +47,17 @@ class SumTree:
         return self.tree[0]
 
     # store priority and sample
-    def add(self, p, data):
+    def add(self, p, sample):
+        obs, nextobs, nextactset, rew, act, done = sample
+
         idx = self.write + self.capacity - 1
 
-        self.data[self.write] = data
+        self.obs[self.write] = obs
+        self.nextobs[self.write] = nextobs
+        self.nextactset[self.write] = nextactset
+        self.rew[self.write] = rew
+        self.act[self.write] = act
+        self.done[self.write] = done
         self.update(idx, p)
 
         self.write += 1
@@ -63,4 +79,12 @@ class SumTree:
         idx = self._retrieve(0, s)
         dataIdx = idx - self.capacity + 1
 
-        return (idx, self.tree[idx], self.data[dataIdx])
+        sample = {'obs': self.obs[dataIdx], 
+            'act': self.act[dataIdx], 
+            'rew': self.rew[dataIdx],
+            'next_obs': self.nextobs[dataIdx], 
+            'next_actset': self.nextactset[dataIdx],
+            'done': self.done[dataIdx]
+        }
+
+        return (idx, self.tree[idx], sample)

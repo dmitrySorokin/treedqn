@@ -19,7 +19,7 @@ class ReplayBuffer:
         self.done = np.zeros(max_size, dtype=float)
 
     def add_transition(self, error, sample):
-        obs, rew, act, nextobs, nextactset, done = sample
+        obs, nextobs, nextactset, rew, act, done = sample
         self.insert_idx = self.insert_idx % self.max_size
         self.obs[self.insert_idx] = obs
         self.rew[self.insert_idx] = rew
@@ -97,8 +97,8 @@ class PrioritizedReplay:  # stored as ( s, a, r, s_ ) in SumTree
             (idx, p, data) = self.tree.get(s)
             priorities.append(p)
             idxs.append(idx)
-            for key, value in zip(batch.keys(), data):
-                batch[key].append(value)
+            for key in batch.keys():
+                batch[key].append(data[key])
 
         sampling_probabilities = priorities / self.tree.total()
         is_weight = np.power(self.tree.n_entries * sampling_probabilities, -self.beta)
